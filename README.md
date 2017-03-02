@@ -1,7 +1,7 @@
 ## Постраничная навигация
 
-Данная постраничная навигация совместима с Bootstrap, поэтому Вам не нужно беспокоиться о стилях для блока навигации.
-Если же Вы не используете Bootstrap -- Вам достаточно будет прописать стили в Вашем CSS-файле для следующих классов:
+Данная постраничная навигация совместима с Bootstrap, поэтому Вам не нужно беспокоиться о стилях для блока навигации, если Вы используете пресловутый фреймворк.
+Если же Вы не используете Bootstrap -- достаточно будет прописать CSS-стили для следующих классов:
 ```css
 .pagination{
     /* Стиль для общего блока с постраничной навигацией */
@@ -22,10 +22,9 @@
 use Pagination\Paginator;
 
 # Получение из базы количества записей
-# ...
-$count = 100;
+$stmt = $db->query('SELECT COUNT(*) aggregate FROM news');
 
-$paginator = new Paginator($count, 10);
+$paginator = new Paginator($stmt->fetchColumn(), 10);
 ```
 Для ограничения выборки из базы данных используйте следующие методы:
 - $paginator->skip() (смещение от начала)
@@ -33,7 +32,7 @@ $paginator = new Paginator($count, 10);
 
 Например:
 ```php
-$stmt = $db->prepare('SELECT * FROM users LIMIT ?, ?');
+$stmt = $db->prepare('SELECT * FROM news LIMIT ?, ?');
 
 $result = $stmt->execute([
     $paginator->skip(),
@@ -41,7 +40,7 @@ $result = $stmt->execute([
 ]);
 ```
 
+Вывод страниц в представлении
 ```php
-# Вывод страниц в представлении
-$paginator->generate();
+<?=$paginator->generate()?>
 ```
