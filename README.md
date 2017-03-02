@@ -28,8 +28,8 @@ $count = 100;
 $paginator = new Paginator($count, 10);
 ```
 Для ограничения выборки из базы данных используйте следующие методы:
-- $paginator->skip()
-- $paginator->take()
+- $paginator->skip() (смещение от начала)
+- $paginator->take() (количество выводимых записей)
 
 Например:
 ```php
@@ -39,8 +39,9 @@ $result = $stmt->execute([
     $paginator->skip(),
     $paginator->take()
 ]);
+```
 
 ```php
-# Вывод страниц
+# Вывод страниц в представлении
 $paginator->generate();
 ```
