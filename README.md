@@ -22,7 +22,7 @@
 use Pagination\Paginator;
 
 # Получение из базы количества записей
-$stmt = $db->query('SELECT COUNT(*) aggregate FROM news');
+$stmt = $db->query('SELECT COUNT(*) FROM news');
 
 $paginator = new Paginator($stmt->fetchColumn(), 10);
 ```
