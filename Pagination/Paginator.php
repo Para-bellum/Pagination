@@ -2,9 +2,6 @@
 
 namespace Parabellum\Pagination;
 
-/*
- * Класс для генерации постраничной навигации
- */
 class Paginator
 {
     /**
@@ -51,10 +48,10 @@ class Paginator
     private $source;
     
     /**
-     * Запуск необходимых данных для навигации
+     * Полготовка навигации к запуску
      * 
-     * @param integer $total - общее количество записей
-     * @param integer $limit - количество записей на страницу
+     * @param integer $total
+     * @param integer $limit
      * 
      * @return void
      */
@@ -76,7 +73,7 @@ class Paginator
     /**
      * Создание и вывод навигации
      * 
-     * @return string
+     * @return string|null
      */
     public function generate()
     {
@@ -87,20 +84,17 @@ class Paginator
         
         $items = [];
         
-        # Получение ограничения для цикла
+        # Получение диапазона номеров страниц
         $range = $this->range();
 
         for ($page = $range[0]; $page <= $range[1]; $page++) {
-            # Формируем статус ссылки
             $status = $page == $this->current ? 'active' : null;
-                
-            # Заносим ссылку
+
             $items[] = $this->html($page, null, null, $status);
         }
         
-        # Если текущая страница не первая
+        # Текущая страница не первая
         if ($this->current > 1) {
-            # Добавление ссылок в начало
             array_unshift(
                 $items,
                 $this->html(1, '&laquo;&laquo;', 'Первая'),
@@ -108,9 +102,8 @@ class Paginator
             );
         }
         
-        # Если текущая страница не последняя
+        # Текущая страница не последняя
         if ($this->current < $this->amount) {
-            # Добавление ссылок в начало
             array_push(
                 $items,
                 $this->html($this->current + 1, '&raquo;', 'Следующая'),
@@ -118,8 +111,7 @@ class Paginator
             );
         }
         
-        # Возвращаем ссылки
-        return '<ul class="pagination">'. implode('', $items) .'</ul>';
+        return '<ul class="pagination">'. implode($items) .'</ul>';
     }
     
     /**
@@ -133,7 +125,7 @@ class Paginator
     }
     
     /**
-     * Ограничение выборки
+     * Сколько записей выбирать
      * 
      * @return integer
      */
@@ -154,8 +146,7 @@ class Paginator
      */
     protected function html($page, $text = null, $title = null, $class = null)
     {
-        # Если текст ссылки не указан
-        if (is_null($text)) {
+        if (!$text) {
             $text = $page;
         }
         
@@ -179,48 +170,42 @@ class Paginator
      */
     protected function range()
     {
-        # Вычисляем ссылки слева (чтобы активная ссылка была посередине)
+        # Начальное положение (чтобы активная ссылка была посередине)
         $begin = $this->current - round($this->max / 2, 0, PHP_ROUND_HALF_DOWN);
 
         if ($begin < 1) {
             $begin = 1;
         }
         
-        # Последняя страница в списке
+        # Конечное положение
         $end = $begin + $this->max;
         
-        # Если впереди есть как минимум $this->max страниц
+        # Конечное положение превышает допустимое
         if ($end > $this->amount) {
-            # Конец - общее количество страниц
             $end = $this->amount;
             
-            # Начало - $this->max с конца, если возможно
             if (($new = $end - $this->max) > 0) {
                 $begin = $new;
             }
         }
         
-        # Возвращаем
         return [$begin, $end];
     }
 
     /**
-     * Для установки текущей страницы
+     * Установка текущей страницы
      * 
      * @return void
      */
     protected function setCurrent()
     {
-        # Получаем номер страницы
         $this->current = isset($this->source[$this->index]) ? $this->source[$this->index] : 1;
 
         if ($this->current > 0) {
             if ($this->current > $this->amount) {
-                # При превышении - сброс на крайнюю
                 $this->current = $this->amount;
             }
         } else {
-            # Устанавливаем страницу на первую
             $this->current = 1;
         }
     }
@@ -234,7 +219,6 @@ class Paginator
      */
     protected function createQueryString(array $parameters = [])
     {
-        # Формируем запрос
         return http_build_query(
             array_merge($this->source, $parameters)
         );
