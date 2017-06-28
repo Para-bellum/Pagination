@@ -44,3 +44,6 @@ $result = $stmt->execute([
 ```php
 <?=$paginator->generate()?>
 ```
+
+###### Лицензия
+Код доступен по лицензии MIT
