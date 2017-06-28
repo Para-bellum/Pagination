@@ -88,9 +88,9 @@ class Paginator
         $items = [];
         
         # Получение ограничения для цикла
-        $limits = $this->limits();
+        $range = $this->range();
 
-        for ($page = $limits[0]; $page <= $limits[1]; $page++) {
+        for ($page = $range[0]; $page <= $range[1]; $page++) {
             # Формируем статус ссылки
             $status = $page == $this->current ? 'active' : null;
                 
@@ -152,11 +152,10 @@ class Paginator
      * 
      * @return string
      */
-    protected function html($page, $text=null, $title=null, $class=null)
+    protected function html($page, $text = null, $title = null, $class = null)
     {
         # Если текст ссылки не указан
         if (is_null($text)) {
-            # Указываем, что текст - цифра страницы
             $text = $page;
         }
         
@@ -164,40 +163,45 @@ class Paginator
         $query = $this->createQueryString([
             $this->index => $page
         ]);
+
+        if ($title) {
+            $title = ' title="'. $title .'"';
+        }
             
         # Формируем HTML код ссылки и возвращаем
-        return '<li class="page-item '. $class .'"><a href="?'. $query .'" title="'. $title .'" class="page-link">'. $text .'</a></li>';
+        return '<li class="page-item '. $class .'"><a href="?'. $query .'"'. $title .' class="page-link">'. $text .'</a></li>';
     }
     
     /**
-     * Для получения, откуда стартовать вывод ссылок
+     * Для получения диапазона вывода ссылок
      * 
      * @return array
      */
-    protected function limits()
+    protected function range()
     {
         # Вычисляем ссылки слева (чтобы активная ссылка была посередине)
-        $left = $this->current - round($this->max / 2, 0, PHP_ROUND_HALF_DOWN);
+        $begin = $this->current - round($this->max / 2, 0, PHP_ROUND_HALF_DOWN);
 
-        # Первая страница в списке
-        $start = $left > 0 ? $left : 1;               
+        if ($begin < 1) {
+            $begin = 1;
+        }
         
         # Последняя страница в списке
-        $end = $start + $this->max;
+        $end = $begin + $this->max;
         
         # Если впереди есть как минимум $this->max страниц
         if ($end > $this->amount) {
             # Конец - общее количество страниц
             $end = $this->amount;
             
-            # Начало - $this->max  с конца
-            $start = $this->amount - $this->max;
-
-            $start = $start > 0 ? $start : 1;
+            # Начало - $this->max с конца, если возможно
+            if (($new = $end - $this->max) > 0) {
+                $begin = $new;
+            }
         }
         
         # Возвращаем
-        return [$start, $end];
+        return [$begin, $end];
     }
 
     /**
@@ -228,7 +232,7 @@ class Paginator
      * 
      * @return string
      */
-    protected function createQueryString(array $parameters=[])
+    protected function createQueryString(array $parameters = [])
     {
         # Формируем запрос
         return http_build_query(
