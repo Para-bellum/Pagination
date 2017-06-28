@@ -1,22 +1,22 @@
 <?php
 
-namespace Pagination;
+namespace Parabellum\Pagination;
 
 /*
-* Класс для генерации постраничной навигации
-*/
+ * Класс для генерации постраничной навигации
+ */
 class Paginator
 {
     /**
-     * Ссылок навигации на страницу, помимо текущей (активной) ссылки
-     * и ссылок-стрелок
+     * Активных ссылок навигации на страницу.
+     * Т.е. ссылок, помимо текущей (активной) ссылки и ссылок-стрелок.
      * 
      * @var integer
      */
     protected $max = 6;
     
     /**
-     * Ключ для строки запроса, в котором указывается номер страницы
+     * Ключ для запроса, в который пишется номер страницы
      * 
      * @var string
      */
@@ -27,34 +27,34 @@ class Paginator
      * 
      * @var integer
      */
-    protected $current;
+    private $current;
     
     /**
      * Общее количество записей
      * 
      * @var integer
      */
-    protected $total; 
+    private $total; 
     
     /**
      * Записей на страницу
      * 
      * @var integer
      */
-    protected $limit;
-    
+    private $limit;
+
     /**
-     * Массив из элементов текущей строки запроса
+     * Исходные данные запроса
      * 
      * @var array
      */
-    protected $query;
+    private $source;
     
     /**
-     * Подготовка к работе с навигацией
+     * Запуск необходимых данных для навигации
      * 
-     * @param integer $total
-     * @param integer $limit
+     * @param integer $total - общее количество записей
+     * @param integer $limit - количество записей на страницу
      * 
      * @return void
      */
@@ -64,28 +64,30 @@ class Paginator
         
         $this->limit = $limit;
         
-        # Вызываем метод установки количества страниц
+        $this->source = $_GET;
+        
+        # Установка количества страниц
         $this->setAmount();
         
-        # Вызываем метод установки текущей страницы
+        # Установка текущей страницы
         $this->setCurrent();
     }
     
     /**
-     * Создание и возврат ссылок навигации
+     * Создание и вывод навигации
      * 
      * @return string
      */
     public function generate()
     {
-        # Если страниц не более одной
-        if (!$this->hasPages()) {
+        # Нет страниц для вывода
+        if ($this->isEmpty()) {
             return;
         }
         
         $items = [];
         
-        # Получаем ограничения для цикла
+        # Получение ограничения для цикла
         $limits = $this->limits();
 
         for ($page = $limits[0]; $page <= $limits[1]; $page++) {
@@ -108,7 +110,7 @@ class Paginator
         
         # Если текущая страница не последняя
         if ($this->current < $this->amount) {
-            # Добавление ссылок в конец
+            # Добавление ссылок в начало
             array_push(
                 $items,
                 $this->html($this->current + 1, '&raquo;', 'Следующая'),
@@ -141,16 +143,16 @@ class Paginator
     }
     
     /**
-     * Для генерации HTML-кода ссылки
-     * 
+     * Генерация HTML-кода ссылки
+     *
      * @param integer $page
-     * @param mixed $text
+     * @param string $text
      * @param string $title
      * @param string $class
      * 
      * @return string
      */
-    protected function html($page, $text=null, $title=null, $status=null)
+    protected function html($page, $text=null, $title=null, $class=null)
     {
         # Если текст ссылки не указан
         if (is_null($text)) {
@@ -162,18 +164,13 @@ class Paginator
         $query = $this->createQueryString([
             $this->index => $page
         ]);
-        
-        # Формируем статус ссылки
-        if ($status) {
-            $status = ' class="'. $status .'"';
-        }
             
         # Формируем HTML код ссылки и возвращаем
-        return '<li'. $status .'><a href="?'. $query .'" title="'. $title .'">'. $text .'</a></li>';
+        return '<li class="page-item '. $class .'"><a href="?'. $query .'" title="'. $title .'" class="page-link">'. $text .'</a></li>';
     }
     
     /**
-     * Для получения диапазона выводимых ссылок
+     * Для получения, откуда стартовать вывод ссылок
      * 
      * @return array
      */
@@ -187,15 +184,15 @@ class Paginator
         
         # Последняя страница в списке
         $end = $start + $this->max;
-
-        # Если получается превышение общего количества
+        
+        # Если впереди есть как минимум $this->max страниц
         if ($end > $this->amount) {
             # Конец - общее количество страниц
             $end = $this->amount;
             
             # Начало - $this->max  с конца
             $start = $this->amount - $this->max;
-            
+
             $start = $start > 0 ? $start : 1;
         }
         
@@ -204,18 +201,18 @@ class Paginator
     }
 
     /**
-     * Для определения текущей страницы
+     * Для установки текущей страницы
      * 
      * @return void
      */
     protected function setCurrent()
     {
         # Получаем номер страницы
-        $this->current = isset($_GET[$this->index]) ? (int) $_GET[$this->index] : 1;
-        
+        $this->current = isset($this->source[$this->index]) ? $this->source[$this->index] : 1;
+
         if ($this->current > 0) {
             if ($this->current > $this->amount) {
-                # При превышении - сброс на крайнюю с конца
+                # При превышении - сброс на крайнюю
                 $this->current = $this->amount;
             }
         } else {
@@ -225,35 +222,28 @@ class Paginator
     }
     
     /**
-     * Для формирования строки запроса
+     * Построение строки запроса
+     *
+     * @param array $parameters
      * 
      * @return string
      */
     protected function createQueryString(array $parameters=[])
     {
-        # Если текущая строка запроса не разобрана
-        if (is_null($this->query)) {
-            # Получаем параметры текущего запроса
-            $query = parse_url($_SERVER['REQUEST_URI'], PHP_URL_QUERY);
-            
-            # Разбираем строку запроса
-            parse_str($query, $this->query);
-        }
-        
         # Формируем запрос
         return http_build_query(
-            array_merge($this->query, $parameters)
+            array_merge($this->source, $parameters)
         );
     }
     
     /**
-     * Для проверки, есть ли больше одной страницы
+     * Проверка, нет ли страниц для вывода
      * 
      * @return boolean
      */
-    public function hasPages()
+    public function isEmpty()
     {
-        return $this->amount > 1;
+        return $this->amount < 2;
     }
     
     /**
@@ -263,6 +253,6 @@ class Paginator
      */
     protected function setAmount()
     {
-        $this->amount = ceil($this->total / $this->limit);
+        $this->amount = ceil($this->total / $this->limit) ?: 1;
     }
 }
