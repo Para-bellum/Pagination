@@ -10,14 +10,14 @@ class Paginator
      * @var integer
      */
     protected $max = 6;
-    
+
     /**
      * Ключ для запроса, в который пишется номер страницы
      * 
      * @var string
      */
     protected $index = 'page';
-    
+
     /**
      * Текущая страница
      * 
@@ -80,20 +80,17 @@ class Paginator
         if ($this->isEmpty()) {
             return;
         }
-        
-        $items = [];
-        
-        # Получение диапазона номеров страниц
-        $range = $this->range();
 
+        $range = $this->range();
+        
         for ($page = $range[0]; $page <= $range[1]; $page++) {
             $class = $page == $this->current ? 'active' : '';
 
             $items[] = $this->html($page, '', '', $class);
         }
-        
-        # Текущая страница не первая
+
         if ($this->current > 1) {
+            # Стрелки на предыдущие страницы
             array_unshift(
                 $items,
                 $this->html(1, '&laquo;&laquo;', 'Первая'),
@@ -101,15 +98,15 @@ class Paginator
             );
         }
         
-        # Текущая страница не последняя
         if ($this->current < $this->amount) {
+            # Стрелки на следующие страницы
             array_push(
                 $items,
                 $this->html($this->current + 1, '&raquo;', 'Следующая'),
                 $this->html($this->amount, '&raquo;&raquo;', 'Последняя')
             );
         }
-        
+
         return '<ul class="pagination">'. implode($items) .'</ul>';
     }
     
