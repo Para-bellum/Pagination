@@ -62,10 +62,8 @@ class Paginator
 
         $this->source = $_GET;
 
-        # Установка количества страниц
         $this->setAmount();
 
-        # Установка текущей страницы
         $this->setCurrent();
     }
 
@@ -86,7 +84,7 @@ class Paginator
         for ($page = $range[0]; $page <= $range[1]; $page++) {
             $class = $page == $this->current ? 'active' : '';
 
-            $items[] = $this->html($page, '', '', $class);
+            $items[] = $this->html($page, $page, '', $class);
         }
 
         if ($this->current > 1) {
@@ -140,18 +138,14 @@ class Paginator
      * 
      * @return string
      */
-    protected function html($page, $text = '', $title = '', $class = '')
+    protected function html($page, $text, $title = '', $class = '')
     {
-        if (!$text) {
-            $text = $page;
-        }
-
         if ($title) {
             $title = ' title="'. $title .'"';
         }
-        
+
         $query = $this->createQueryString($page);
-            
+
         # Формируем HTML код ссылки и возвращаем
         return '<li class="page-item '. $class .'"><a href="?'. $query .'"'. $title .' class="page-link">'. $text .'</a></li>';
     }
@@ -164,12 +158,12 @@ class Paginator
     protected function range()
     {
         # Начальное положение (чтобы активная ссылка была посередине)
-        $begin = $this->current - round($this->max / 2, 0, PHP_ROUND_HALF_DOWN);
+        $begin = $this->current - ceil($this->max / 2);
 
         if ($begin < 1) {
             $begin = 1;
         }
-        
+
         # Отсчёт от начала
         $end = $begin + $this->max;
 
