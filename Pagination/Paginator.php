@@ -5,7 +5,7 @@ namespace Parabellum\Pagination;
 class Paginator
 {
     /**
-     * Количество сылок, помимо текущей ссылки и ссылок-стрелок.
+     * Количество ссылок, помимо текущей и ссылок-стрелок
      * 
      * @var integer
      */
@@ -57,13 +57,10 @@ class Paginator
     public function __construct($total, $limit)
     {
         $this->total = $total;
-
         $this->limit = $limit;
-
         $this->source = $_GET;
 
         $this->setAmount();
-
         $this->setCurrent();
     }
 
@@ -84,15 +81,15 @@ class Paginator
         for ($page = $range[0]; $page <= $range[1]; $page++) {
             $class = $page == $this->current ? 'active' : '';
 
-            $items[] = $this->html($page, $page, '', $class);
+            $items[] = $this->item($page, $page, '', $class);
         }
 
         if ($this->current > 1) {
             # Стрелки на предыдущие страницы
             array_unshift(
                 $items,
-                $this->html(1, '&laquo;&laquo;', 'Первая'),
-                $this->html($this->current - 1, '&laquo;', 'Предыдущая')
+                $this->item(1, '&laquo;&laquo;', 'Первая'),
+                $this->item($this->current - 1, '&laquo;', 'Предыдущая')
             );
         }
         
@@ -100,8 +97,8 @@ class Paginator
             # Стрелки на следующие страницы
             array_push(
                 $items,
-                $this->html($this->current + 1, '&raquo;', 'Следующая'),
-                $this->html($this->amount, '&raquo;&raquo;', 'Последняя')
+                $this->item($this->current + 1, '&raquo;', 'Следующая'),
+                $this->item($this->amount, '&raquo;&raquo;', 'Последняя')
             );
         }
 
@@ -129,7 +126,7 @@ class Paginator
     }
     
     /**
-     * Генерация HTML-кода ссылки
+     * Создание HTML-кода ссылки
      *
      * @param integer $page
      * @param string $text
@@ -138,7 +135,7 @@ class Paginator
      * 
      * @return string
      */
-    protected function html($page, $text, $title = '', $class = '')
+    protected function item($page, $text, $title = '', $class = '')
     {
         if ($title) {
             $title = ' title="'. $title .'"';
@@ -146,7 +143,6 @@ class Paginator
 
         $query = $this->createQueryString($page);
 
-        # Формируем HTML код ссылки и возвращаем
         return '<li class="page-item '. $class .'"><a href="?'. $query .'"'. $title .' class="page-link">'. $text .'</a></li>';
     }
     
@@ -157,7 +153,6 @@ class Paginator
      */
     protected function range()
     {
-        # Начальное положение (чтобы активная ссылка была посередине)
         $begin = $this->current - ceil($this->max / 2);
 
         if ($begin < 1) {
