@@ -5,77 +5,85 @@ namespace Parabellum\Pagination;
 class Paginator
 {
     /**
-     * Количество ссылок, помимо текущей и ссылок-стрелок
+     * The number of links, in addition to the current and arrows.
      * 
      * @var integer
      */
     protected $max = 6;
 
     /**
-     * Ключ для запроса, в который пишется номер страницы
+     * The request key containing the page number.
      * 
      * @var string
      */
     protected $index = 'page';
 
     /**
-     * Текущая страница
+     * The current page.
      * 
      * @var integer
      */
     private $current;
     
     /**
-     * Общее количество записей
+     * Total amount of records.
      * 
      * @var integer
      */
     private $total; 
     
     /**
-     * Записей на страницу
+     * Amount of records on page.
      * 
      * @var integer
      */
     private $limit;
 
     /**
-     * Исходные данные запроса
+     * The request data.
      * 
      * @var array
      */
-    private $source;
+    protected $source;
     
     /**
-     * Подготовка навигации к запуску
+     * Create a paginator instance.
      * 
      * @param integer $total
      * @param integer $limit
+     * @param array $source
      * 
      * @return void
      */
-    public function __construct($total, $limit)
+    public function __construct($total, $limit, array $source)
     {
-        $this->total = $total;
-        $this->limit = $limit;
-        $this->source = $_GET;
+        $this->total  = $total;
+        $this->limit  = $limit;
+        $this->source = $source;
 
         $this->setAmount();
         $this->setCurrent();
     }
 
     /**
-     * Создание и вывод навигации
+     * Render the pagination code.
      * 
      * @return string|null
      */
-    public function generate()
+    public function render()
     {
-        # Нет страниц для вывода
-        if ($this->isEmpty()) {
-            return;
+        if (!$this->isEmpty()) {
+            return sprintf('<ul class="pagination">%s</ul>', join($this->getItems()));
         }
-
+    }
+    
+    /**
+     * Get the pagination items.
+     * 
+     * @return array
+     */
+    protected function getItems()
+    {
         $range = $this->range();
         
         for ($page = $range[0]; $page <= $range[1]; $page++) {
@@ -85,28 +93,26 @@ class Paginator
         }
 
         if ($this->current > 1) {
-            # Стрелки на предыдущие страницы
             array_unshift(
                 $items,
-                $this->item(1, '&laquo;&laquo;', 'Первая'),
-                $this->item($this->current - 1, '&laquo;', 'Предыдущая')
+                $this->item(1, '&laquo;&laquo;', _('First')),
+                $this->item($this->current - 1, '&laquo;', _('Previous'))
             );
         }
         
         if ($this->current < $this->amount) {
-            # Стрелки на следующие страницы
             array_push(
                 $items,
-                $this->item($this->current + 1, '&raquo;', 'Следующая'),
-                $this->item($this->amount, '&raquo;&raquo;', 'Последняя')
+                $this->item($this->current + 1, '&raquo;', _('Next')),
+                $this->item($this->amount, '&raquo;&raquo;', _('Last'))
             );
         }
-
-        return '<ul class="pagination">'. implode($items) .'</ul>';
+        
+        return $items;
     }
     
     /**
-     * С какой позиции начинать выборку
+     * Get the offset.
      * 
      * @return integer
      */
@@ -116,7 +122,7 @@ class Paginator
     }
     
     /**
-     * Сколько записей выбирать
+     * How many records to take.
      * 
      * @return integer
      */
@@ -126,7 +132,7 @@ class Paginator
     }
     
     /**
-     * Создание HTML-кода ссылки
+     * Generate the link HTML code.
      *
      * @param integer $page
      * @param string $text
@@ -138,16 +144,20 @@ class Paginator
     protected function item($page, $text, $title = '', $class = '')
     {
         if ($title) {
-            $title = ' title="'. $title .'"';
+            $title = sprintf('title="%s"', $title);
         }
 
-        $query = $this->createQueryString($page);
-
-        return '<li class="page-item '. $class .'"><a href="?'. $query .'"'. $title .' class="page-link">'. $text .'</a></li>';
+        return sprintf(
+            '<li class="page-item %s"><a href="?%s" %s class="page-link">%s</a></li>',
+            $class,
+            $this->createQueryString($page),
+            $title,
+            $text
+        );
     }
     
     /**
-     * Получения диапазона вывода ссылок
+     * Get the range of display links.
      * 
      * @return array
      */
@@ -159,14 +169,11 @@ class Paginator
             $begin = 1;
         }
 
-        # Отсчёт от начала
         $end = $begin + $this->max;
 
-        # Конечное положение превышает допустимое
         if ($end > $this->amount) {
             $end = $this->amount;
 
-            # Отсчёт от конца
             if (($new = $end - $this->max) > 0) {
                 $begin = $new;
             }
@@ -176,7 +183,7 @@ class Paginator
     }
 
     /**
-     * Установка текущей страницы
+     * Set the current page number.
      * 
      * @return void
      */
@@ -192,7 +199,7 @@ class Paginator
     }
     
     /**
-     * Построение строки запроса
+     * Build the query string.
      *
      * @param integer $page
      * 
@@ -206,7 +213,7 @@ class Paginator
     }
     
     /**
-     * Проверка, нет ли страниц для вывода
+     * Check if not the links for dislpay.
      * 
      * @return boolean
      */
@@ -216,7 +223,7 @@ class Paginator
     }
     
     /**
-     * Установка общего числа страниц
+     * Set the total amount of pages.
      * 
      * @return void
      */

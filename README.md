@@ -24,7 +24,7 @@ use Parabellum\Pagination\Paginator;
 # Получение количества записей
 $stmt = $db->query('SELECT COUNT(*) FROM news');
 
-$paginator = new Paginator($stmt->fetchColumn(), 10);
+$paginator = new Paginator($stmt->fetchColumn(), 10, $_GET);
 ```
 Для ограничения выборки из базы данных используйте следующие методы:
 - $paginator->skip() (смещение от начала)
