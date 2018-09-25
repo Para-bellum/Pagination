@@ -42,7 +42,7 @@ $result = $stmt->execute([
 
 Вывод страниц в представлении
 ```php
-<?=$paginator->generate()?>
+<?=$paginator->render()?>
 ```
 
 ###### Лицензия
