@@ -5,11 +5,11 @@ namespace Parabellum\Pagination;
 class Paginator
 {
     /**
-     * The number of links, in addition to the current and arrows.
+     * The number of links, in addition to the current.
      * 
      * @var integer
      */
-    protected $max = 6;
+    protected $sides = 6;
 
     /**
      * The request key containing the page number.
@@ -26,6 +26,13 @@ class Paginator
     private $current;
     
     /**
+     * The pages amount.
+     * 
+     * @var integer
+     */
+    private $pages;
+    
+    /**
      * Total amount of records.
      * 
      * @var integer
@@ -33,36 +40,37 @@ class Paginator
     private $total; 
     
     /**
-     * Amount of records on page.
+     * Amount of records per page.
      * 
      * @var integer
      */
-    private $limit;
+    private $take;
 
     /**
-     * The request data.
+     * The base part of query string.
      * 
      * @var array
      */
-    protected $source;
+    protected $query;
     
     /**
      * Create a paginator instance.
      * 
      * @param integer $total
-     * @param integer $limit
+     * @param integer $take
      * @param array $source
      * 
      * @return void
      */
-    public function __construct($total, $limit, array $source)
+    public function __construct($total, $take, array & $source)
     {
         $this->total  = $total;
-        $this->limit  = $limit;
-        $this->source = $source;
+        $this->take   = $take;
+        $this->source = & $source;
 
-        $this->setAmount();
+        $this->setPages();
         $this->setCurrent();
+        $this->setQuery();
     }
 
     /**
@@ -87,9 +95,9 @@ class Paginator
         $range = $this->range();
         
         for ($page = $range[0]; $page <= $range[1]; $page++) {
-            $class = $page == $this->current ? 'active' : '';
+            $class = $page == $this->current ? 'active' : null;
 
-            $items[] = $this->item($page, $page, '', $class);
+            $items[] = $this->item($page, $page, null, $class);
         }
 
         if ($this->current > 1) {
@@ -100,11 +108,11 @@ class Paginator
             );
         }
         
-        if ($this->current < $this->amount) {
+        if ($this->current < $this->pages) {
             array_push(
                 $items,
                 $this->item($this->current + 1, '&raquo;', _('Next')),
-                $this->item($this->amount, '&raquo;&raquo;', _('Last'))
+                $this->item($this->pages, '&raquo;&raquo;', _('Last'))
             );
         }
         
@@ -118,7 +126,7 @@ class Paginator
      */
     public function skip()
     {
-        return $this->current * $this->limit - $this->limit;
+        return $this->current * $this->take - $this->take;
     }
     
     /**
@@ -128,11 +136,11 @@ class Paginator
      */
     public function take()
     {
-        return $this->limit;
+        return $this->take;
     }
     
     /**
-     * Generate the link HTML code.
+     * Generate the item HTML.
      *
      * @param integer $page
      * @param string $text
@@ -141,19 +149,15 @@ class Paginator
      * 
      * @return string
      */
-    protected function item($page, $text, $title = '', $class = '')
+    protected function item($page, $text, $title = null, $class = null)
     {
-        if ($title) {
+        if (null !== $title) {
             $title = sprintf('title="%s"', $title);
         }
-
-        return sprintf(
-            '<li class="page-item %s"><a href="?%s" %s class="page-link">%s</a></li>',
-            $class,
-            $this->createQueryString($page),
-            $title,
-            $text
-        );
+        
+        $format = '<li class="page-item %s"><a href="?%s%d" %s class="page-link">%s</a></li>';
+        
+        return sprintf($format, $class, $this->query, $page, $title, $text);
     }
     
     /**
@@ -163,23 +167,33 @@ class Paginator
      */
     protected function range()
     {
-        $begin = $this->current - ceil($this->max / 2);
+        $begin = $this->current - ceil($this->sides / 2);
 
         if ($begin < 1) {
             $begin = 1;
         }
 
-        $end = $begin + $this->max;
+        $end = $begin + $this->sides;
 
-        if ($end > $this->amount) {
-            $end = $this->amount;
+        if ($end > $this->pages) {
+            $end = $this->pages;
 
-            if (($new = $end - $this->max) > 0) {
+            if (($new = $end - $this->sides) > 0) {
                 $begin = $new;
             }
         }
 
         return [$begin, $end];
+    }
+    
+    /**
+     * Set the total amount of pages.
+     * 
+     * @return void
+     */
+    protected function setPages()
+    {
+        $this->pages = ceil($this->total / $this->take) ?: 1;
     }
 
     /**
@@ -189,27 +203,31 @@ class Paginator
      */
     protected function setCurrent()
     {
-        $this->current = isset($this->source[$this->index]) ? (int) $this->source[$this->index] : 1;
+        $page = isset($this->source[$this->index]) ? (int) $this->source[$this->index] : 1;
 
-        if ($this->current < 1) {
-            $this->current = 1;
-        } elseif ($this->current > $this->amount) {
-            $this->current = $this->amount;
+        if ($page < 1) {
+            $page = 1;
+        } elseif ($page > $this->pages) {
+            $page = $this->pages;
         }
+        
+        $this->current = $page;
     }
     
     /**
-     * Build the query string.
-     *
-     * @param integer $page
+     * Set the base part of query string.
      * 
-     * @return string
+     * @return void
      */
-    protected function createQueryString($page)
+    protected function setQuery()
     {
-        return http_build_query(
-            array_merge($this->source, [$this->index => $page])
-        );
+        $source = $this->source;
+        
+        unset($source[$this->index]);
+        
+        $source[$this->index] = '';
+        
+        $this->query = http_build_query($source);
     }
     
     /**
@@ -219,16 +237,6 @@ class Paginator
      */
     public function isEmpty()
     {
-        return $this->amount < 2;
-    }
-    
-    /**
-     * Set the total amount of pages.
-     * 
-     * @return void
-     */
-    protected function setAmount()
-    {
-        $this->amount = ceil($this->total / $this->limit) ?: 1;
+        return $this->pages < 2;
     }
 }
